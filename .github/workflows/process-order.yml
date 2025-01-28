@@ -1,0 +1,36 @@
+name: Process Order
+on:
+  workflow_dispatch:  # Para activar manualmente
+  schedule:
+    - cron: '0 */2 * * *'  # Cada 2 horas
+
+jobs:
+  generate-order:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Generate sample order
+        run: |
+          echo '{
+            "orderId": "'$RANDOM'",
+            "products": [
+              {"id": "P001", "name": "Laptop", "quantity": 2},
+              {"id": "P002", "name": "Mouse", "quantity": 3}
+            ],
+            "totalAmount": 2500
+          }' > order.json
+      
+      - name: Upload order data
+        uses: actions/upload-artifact@v3
+        with:
+          name: order-data
+          path: order.json
+          
+      - name: Trigger Inventory Update
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT }}
+          repository: TU-USUARIO/inventory-manager
+          event-type: new-order
+          client-payload: '{"orderFile": "order-data"}'
